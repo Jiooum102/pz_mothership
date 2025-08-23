@@ -1,0 +1,37 @@
+name: Deploy NVIDIA DCGM Exporter Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      compose_project_name:
+        description: 'Override COMPOSE_PROJECT_NAME'
+        required: false
+        default: 'pz_mothership'
+
+jobs:
+  deploy-nvidia-dcgm-exporter:
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name }}
+      NVIDIA_DCGM_EXPORTER_PORT: ${{ secrets.NVIDIA_DCGM_EXPORTER_PORT }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build (or pull) NVIDIA DCGM Exporter image
+        run: |
+          docker-compose -f deployments/docker-compose.yml build nvidia-dcgm-exporter || echo "No build context; using upstream image"
+
+      - name: Deploy NVIDIA DCGM Exporter service
+        run: |
+          docker-compose -f deployments/docker-compose.yml up -d nvidia-dcgm-exporter
