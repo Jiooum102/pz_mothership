@@ -35,8 +35,8 @@ jobs:
 
       - name: Build (or pull) Grafana image
         run: |
-          docker-compose -f deployments/docker-compose.yml build grafana || echo "No build context; using upstream image"
+          docker compose -f deployments/docker-compose.yml build grafana || echo "No build context; using upstream image"
 
       - name: Deploy Grafana service
         run: |
-          docker-compose -f deployments/docker-compose.yml up -d grafana
+          docker compose -f deployments/docker-compose.yml up -d grafana

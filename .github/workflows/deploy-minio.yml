@@ -36,7 +36,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build MinIO image
       run: |
-        docker-compose -f deployments/docker-compose.yml build minio
+        docker compose -f deployments/docker-compose.yml build minio
     - name: Deploy MinIO service
       run: |
-        docker-compose -f deployments/docker-compose.yml up -d minio
+        docker compose -f deployments/docker-compose.yml up -d minio

@@ -33,8 +33,8 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build (or pull) cAdvisor image
         run: |
-          docker-compose -f deployments/docker-compose.yml build cadvisor || echo "No build context; using upstream image"
+          docker compose -f deployments/docker-compose.yml build cadvisor || echo "No build context; using upstream image"
       - name: Deploy cAdvisor service (depends on redis)
         run: |
-          docker-compose -f deployments/docker-compose.yml up -d redis
-          docker-compose -f deployments/docker-compose.yml up -d cadvisor
+          docker compose -f deployments/docker-compose.yml up -d redis
+          docker compose -f deployments/docker-compose.yml up -d cadvisor

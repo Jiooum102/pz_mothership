@@ -35,8 +35,8 @@ jobs:
 
       - name: Build (or pull) Redis image
         run: |
-          docker-compose -f deployments/docker-compose.yml build redis || echo "No build context; using upstream image"
+          docker compose -f deployments/docker-compose.yml build redis || echo "No build context; using upstream image"
 
       - name: Deploy Redis service
         run: |
-          docker-compose -f deployments/docker-compose.yml up -d redis
+          docker compose -f deployments/docker-compose.yml up -d redis

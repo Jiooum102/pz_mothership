@@ -41,8 +41,8 @@ jobs:
 
     - name: Build MongoDB image
       run: |
-        docker-compose -f deployments/docker-compose.yml build mongo || echo "No build context; using upstream image"
+        docker compose -f deployments/docker-compose.yml build mongo || echo "No build context; using upstream image"
 
     - name: Deploy MongoDB service
       run: |
-        docker-compose -f deployments/docker-compose.yml up -d mongo
+        docker compose -f deployments/docker-compose.yml up -d mongo
