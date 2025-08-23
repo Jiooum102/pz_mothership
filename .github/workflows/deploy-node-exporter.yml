@@ -1,6 +1,10 @@
 name: Deploy Node Exporter Service
 
 on:
+  push:
+    tags:
+      - 'staging'
+      - 'staging-*'
   workflow_dispatch:
     inputs:
       compose_project_name:
@@ -12,7 +16,7 @@ jobs:
   deploy-node-exporter:
     runs-on: ubuntu-latest
     env:
-      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name }}
+      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
       NODE_EXPORTER_PORT: ${{ secrets.NODE_EXPORTER_PORT }}
 
     steps:

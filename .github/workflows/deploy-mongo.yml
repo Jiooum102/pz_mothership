@@ -1,6 +1,10 @@
 name: Deploy MongoDB Service
 
 on:
+  push:
+    tags:
+      - 'staging'
+      - 'staging-*'
   workflow_dispatch:
     inputs:
       compose_project_name:
@@ -12,7 +16,7 @@ jobs:
   deploy-mongo:
     runs-on: ubuntu-latest
     env:
-      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name }}
+      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
       MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
       MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
       MONGO_INITDB_DATABASE: ${{ secrets.MONGO_INITDB_DATABASE }}

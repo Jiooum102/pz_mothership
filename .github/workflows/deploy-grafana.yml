@@ -1,6 +1,10 @@
 name: Deploy Grafana Service
 
 on:
+  push:
+    tags:
+      - 'staging'
+      - 'staging-*'
   workflow_dispatch:
     inputs:
       compose_project_name:
@@ -12,7 +16,7 @@ jobs:
   deploy-grafana:
     runs-on: ubuntu-latest
     env:
-      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name }}
+      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
       GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
 
     steps:
