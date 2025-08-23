@@ -1,5 +1,9 @@
 name: Code linting CI
-on: push
+on:
+  push:
+    tags:
+      - 'staging'
+      - 'staging-*'
 jobs:
   black:
     runs-on: self-hosted
