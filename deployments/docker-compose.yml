@@ -55,7 +55,7 @@ services:
       - prometheus-network
     ports:
       - "${PROMETHEUS_PORT}:9090"
-
+  
   grafana:
     image: grafana/grafana:latest
     container_name: ${COMPOSE_PROJECT_NAME}_grafana
@@ -66,7 +66,7 @@ services:
       - prometheus-network
     ports:
       - "${GRAFANA_PORT}:3000"
-
+  
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: ${COMPOSE_PROJECT_NAME}_node_exporter
@@ -80,7 +80,7 @@ services:
       - '/:/host:ro,rslave'
     networks:
       - prometheus-network
-
+  
   nvidia-dcgm-exporter:
     image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.7-3.5.0-ubuntu22.04
     container_name: ${COMPOSE_PROJECT_NAME}_nvidia-dcgm-exporter
@@ -96,7 +96,7 @@ services:
       - "${NVIDIA_DCGM_EXPORTER_PORT}:9400"
     networks:
       - prometheus-network
-
+  
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: ${COMPOSE_PROJECT_NAME}_cadvisor
@@ -112,7 +112,7 @@ services:
       - redis
     networks:
       - prometheus-network
-
+  
   redis:
     image: redis:latest
     container_name: ${COMPOSE_PROJECT_NAME}_redis
