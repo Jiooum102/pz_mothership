@@ -1,9 +1,9 @@
 name: Code linting CI
 on:
   push:
-    tags:
-      - 'staging'
-      - 'staging-*'
+    branches:
+      - '**'
+  workflow_dispatch:
 jobs:
   black:
     runs-on: self-hosted
