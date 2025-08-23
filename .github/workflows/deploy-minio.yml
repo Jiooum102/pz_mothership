@@ -18,11 +18,27 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
+      # MinIO (no manual overrides)
       MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
       MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
       MINIO_PORT: ${{ secrets.MINIO_PORT }}
       MINIO_CONSOLE_PORT: ${{ secrets.MINIO_CONSOLE_PORT }}
       MINIO_DATA_DIR: ${{ secrets.MINIO_DATA_DIR }}
+      # MongoDB
+      MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
+      MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+      MONGO_INITDB_DATABASE: ${{ secrets.MONGO_INITDB_DATABASE }}
+      MONGODB_DATA_DIR: ${{ secrets.MONGODB_DATA_DIR }}
+      MONDODB_LOG_DIR: ${{ secrets.MONDODB_LOG_DIR }}
+      MONGO_PORT: ${{ secrets.MONGO_PORT }}
+      MONGO_DATA_DIR: ${{ secrets.MONGO_DATA_DIR }}
+      # Monitoring / Auxiliary
+      PROMETHEUS_PORT: ${{ secrets.PROMETHEUS_PORT }}
+      GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
+      NODE_EXPORTER_PORT: ${{ secrets.NODE_EXPORTER_PORT }}
+      NVIDIA_DCGM_EXPORTER_PORT: ${{ secrets.NVIDIA_DCGM_EXPORTER_PORT }}
+      CADVISOR_PORT: ${{ secrets.CADVISOR_PORT }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT }}
 
     steps:
     - name: Checkout code
