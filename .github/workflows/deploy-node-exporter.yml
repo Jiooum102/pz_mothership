@@ -5,6 +5,8 @@ on:
     tags:
       - 'staging'
       - 'staging-*'
+      - 'self-hosted'
+      - 'self-hosted-*'
   workflow_dispatch:
     inputs:
       compose_project_name:
@@ -15,7 +17,7 @@ on:
 jobs:
   deploy-node-exporter:
     environment: staging
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
       # MinIO
