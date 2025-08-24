@@ -32,7 +32,6 @@ on:
 # Supports both workflow_dispatch (github.event.inputs.*) and workflow_call (inputs.*)
 env:
   COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || inputs.compose_project_name || 'pz_mothership' }}
-  TARGET_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || '' }}
   # MinIO
   MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
   MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
@@ -58,10 +57,12 @@ env:
 
 jobs:
   deploy-single:
-    if: ${{ github.event_name == 'push' && env.TARGET_SERVICE != '' && env.TARGET_SERVICE != 'all' }}
-    name: Deploy single service (${{ env.TARGET_SERVICE }})
+    if: ${{ github.event_name == 'push' && github.event.inputs.service != '' && github.event.inputs.service != 'all' }}
+    name: Deploy single service
     environment: staging
     runs-on: self-hosted
+    env:
+      TARGET_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || '' }}
     steps:
       - name: Debug context
         run: |
@@ -94,7 +95,7 @@ jobs:
         run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
 
   deploy-all:
-    if: ${{ github.event_name == 'push' && (env.TARGET_SERVICE == '' || env.TARGET_SERVICE == 'all') }}
+    if: ${{ github.event_name == 'push' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')}}
     name: Deploy all services (${{ matrix.service }})
     environment: staging
     runs-on: self-hosted
