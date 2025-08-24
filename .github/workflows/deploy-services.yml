@@ -32,6 +32,7 @@ on:
 # Supports both workflow_dispatch (github.event.inputs.*) and workflow_call (inputs.*)
 env:
   COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || inputs.compose_project_name || 'pz_mothership' }}
+  TARGET_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || '' }}
   # MinIO
   MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
   MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
@@ -53,7 +54,6 @@ env:
   NVIDIA_DCGM_EXPORTER_PORT: ${{ secrets.NVIDIA_DCGM_EXPORTER_PORT }}
   CADVISOR_PORT: ${{ secrets.CADVISOR_PORT }}
   REDIS_PORT: ${{ secrets.REDIS_PORT }}
-  # (Optional) Additional services
   PORTAINER_PORT: ${{ secrets.PORTAINER_PORT }}
 
 jobs:
@@ -62,8 +62,6 @@ jobs:
     name: Deploy single service
     environment: staging
     runs-on: self-hosted
-    env:
-      TARGET_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || '' }}
     steps:
       - name: Validate target service
         run: |
@@ -92,33 +90,34 @@ jobs:
       - name: Summary
         run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
 
-  deploy-all:
-    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') }}
-    name: Deploy all services (${{ matrix.service }})
-    environment: staging
-    runs-on: self-hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build image (if local context exists)
-        run: |
-          docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
-      - name: Deploy service
-        run: |
-          if [ "${{ matrix.service }}" = "cadvisor" ]; then
-            docker compose -f deployments/docker-compose.yml up -d redis
-          fi
-          docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
-      - name: Summary
-        run: echo "Service ${{ matrix.service }} deployed (all mode)." >> $GITHUB_STEP_SUMMARY
+  # deploy-all job remains commented out
+  # deploy-all:
+  #   if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') }}
+  #   name: Deploy all services (${{ matrix.service }})
+  #   environment: staging
+  #   runs-on: self-hosted
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v2
+  #     - name: Log in to DockerHub
+  #       uses: docker/login-action@v2
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
+  #     - name: Build image (if local context exists)
+  #       run: |
+  #         docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
+  #     - name: Deploy service
+  #       run: |
+  #         if [ "${{ matrix.service }}" = "cadvisor" ]; then
+  #           docker compose -f deployments/docker-compose.yml up -d redis
+  #         fi
+  #         docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
+  #     - name: Summary
+  #       run: echo "Service ${{ matrix.service }} deployed (all mode)." >> $GITHUB_STEP_SUMMARY
