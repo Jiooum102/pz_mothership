@@ -57,8 +57,44 @@ env:
   PORTAINER_PORT: ${{ secrets.PORTAINER_PORT }}
 
 jobs:
-  deploy-services:
-    name: Deploy ${{ matrix.service }}
+  deploy-single:
+    if: ${{ !( github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') ) }}
+    name: Deploy single service
+    environment: staging
+    runs-on: self-hosted
+    env:
+      TARGET_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || '' }}
+    steps:
+      - name: Validate target service
+        run: |
+          if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "all" ]; then
+            echo "Invalid TARGET_SERVICE='$TARGET_SERVICE' for single-service job" >&2
+            exit 1
+          fi
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build image (if local context exists)
+        run: |
+          docker compose -f deployments/docker-compose.yml build "$TARGET_SERVICE" || echo "No build context for $TARGET_SERVICE; using upstream image"
+      - name: Deploy service
+        run: |
+          if [ "$TARGET_SERVICE" = "cadvisor" ]; then
+            docker compose -f deployments/docker-compose.yml up -d redis
+          fi
+          docker compose -f deployments/docker-compose.yml up -d "$TARGET_SERVICE"
+      - name: Summary
+        run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
+
+  deploy-all:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') }}
+    name: Deploy all services (${{ matrix.service }})
     environment: staging
     runs-on: self-hosted
     strategy:
@@ -66,48 +102,23 @@ jobs:
       matrix:
         service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
     steps:
-      - name: Determine requested service
-        id: filter
-        env:
-          DISPATCH_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || '' }}
-          CALLED_SERVICE: ${{ github.event_name == 'workflow_call' && inputs.service || '' }}
-        run: |
-          REQUESTED="${DISPATCH_SERVICE:-${CALLED_SERVICE:-all}}"
-          if [ "$REQUESTED" != "all" ] && [ "$REQUESTED" != "${{ matrix.service }}" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-          echo "requested=$REQUESTED" >> $GITHUB_OUTPUT
       - name: Checkout code
-        if: steps.filter.outputs.skip == 'false'
         uses: actions/checkout@v3
       - name: Set up Docker Buildx
-        if: steps.filter.outputs.skip == 'false'
         uses: docker/setup-buildx-action@v2
       - name: Log in to DockerHub
-        if: steps.filter.outputs.skip == 'false'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build image (if local context exists)
-        if: steps.filter.outputs.skip == 'false'
         run: |
           docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
       - name: Deploy service
-        if: steps.filter.outputs.skip == 'false'
         run: |
-          # Handle explicit dependency for cadvisor requiring redis
           if [ "${{ matrix.service }}" = "cadvisor" ]; then
             docker compose -f deployments/docker-compose.yml up -d redis
           fi
           docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
       - name: Summary
-        if: always()
-        run: |
-          REQUESTED="${{ steps.filter.outputs.requested }}"
-          if [ "${{ steps.filter.outputs.skip }}" = "true" ]; then
-            echo "Service ${{ matrix.service }} skipped (requested: $REQUESTED)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Service ${{ matrix.service }} deployed (requested: $REQUESTED)." >> $GITHUB_STEP_SUMMARY
+        run: echo "Service ${{ matrix.service }} deployed (all mode)." >> $GITHUB_STEP_SUMMARY
