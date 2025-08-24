@@ -58,7 +58,7 @@ env:
 
 jobs:
   deploy-single:
-    if: ${{ env.TARGET_SERVICE != '' && env.TARGET_SERVICE != 'all' }}
+    if: ${{ github.event_name == 'push' && env.TARGET_SERVICE != '' && env.TARGET_SERVICE != 'all' }}
     name: Deploy single service (${{ env.TARGET_SERVICE }})
     environment: staging
     runs-on: self-hosted
@@ -94,7 +94,7 @@ jobs:
         run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
 
   deploy-all:
-    if: ${{ env.TARGET_SERVICE == '' || env.TARGET_SERVICE == 'all' }}
+    if: ${{ github.event_name == 'push' && (env.TARGET_SERVICE == '' || env.TARGET_SERVICE == 'all') }}
     name: Deploy all services (${{ matrix.service }})
     environment: staging
     runs-on: self-hosted
