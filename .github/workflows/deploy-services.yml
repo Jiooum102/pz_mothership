@@ -58,11 +58,14 @@ env:
 
 jobs:
   deploy-single:
-    if: ${{ !( github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') ) }}
-    name: Deploy single service
+    if: ${{ env.TARGET_SERVICE != '' && env.TARGET_SERVICE != 'all' }}
+    name: Deploy single service (${{ env.TARGET_SERVICE }})
     environment: staging
     runs-on: self-hosted
     steps:
+      - name: Debug context
+        run: |
+          echo "event: $GITHUB_EVENT_NAME"; echo "TARGET_SERVICE=$TARGET_SERVICE"; echo "TARGET_SERVICE=$TARGET_SERVICE"
       - name: Validate target service
         run: |
           if [ -z "$TARGET_SERVICE" ] || [ "$TARGET_SERVICE" = "all" ]; then
@@ -90,34 +93,36 @@ jobs:
       - name: Summary
         run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
 
-  # deploy-all job remains commented out
-  # deploy-all:
-  #   if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') }}
-  #   name: Deploy all services (${{ matrix.service }})
-  #   environment: staging
-  #   runs-on: self-hosted
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v2
-  #     - name: Log in to DockerHub
-  #       uses: docker/login-action@v2
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME }}
-  #         password: ${{ secrets.DOCKER_PASSWORD }}
-  #     - name: Build image (if local context exists)
-  #       run: |
-  #         docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
-  #     - name: Deploy service
-  #       run: |
-  #         if [ "${{ matrix.service }}" = "cadvisor" ]; then
-  #           docker compose -f deployments/docker-compose.yml up -d redis
-  #         fi
-  #         docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
-  #     - name: Summary
-  #       run: echo "Service ${{ matrix.service }} deployed (all mode)." >> $GITHUB_STEP_SUMMARY
+  deploy-all:
+    if: ${{ env.TARGET_SERVICE == '' || env.TARGET_SERVICE == 'all' }}
+    name: Deploy all services (${{ matrix.service }})
+    environment: staging
+    runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
+    steps:
+      - name: Debug context
+        run: |
+          echo "event: $GITHUB_EVENT_NAME"; echo "SERVICE_INPUT=$SERVICE_INPUT (all mode)"
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build image (if local context exists)
+        run: |
+          docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
+      - name: Deploy service
+        run: |
+          if [ "${{ matrix.service }}" = "cadvisor" ]; then
+            docker compose -f deployments/docker-compose.yml up -d redis
+          fi
+          docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
+      - name: Summary
+        run: echo "Service ${{ matrix.service }} deployed (all mode)." >> $GITHUB_STEP_SUMMARY
