@@ -68,14 +68,17 @@ jobs:
     steps:
       - name: Determine requested service
         id: filter
+        env:
+          DISPATCH_SERVICE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || '' }}
+          CALLED_SERVICE: ${{ github.event_name == 'workflow_call' && inputs.service || '' }}
         run: |
-          # Derive requested service from workflow_dispatch, workflow_call, or default to 'all'
-          REQUESTED="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || 'all' }}"
+          REQUESTED="${DISPATCH_SERVICE:-${CALLED_SERVICE:-all}}"
           if [ "$REQUESTED" != "all" ] && [ "$REQUESTED" != "${{ matrix.service }}" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
+          echo "requested=$REQUESTED" >> $GITHUB_OUTPUT
       - name: Checkout code
         if: steps.filter.outputs.skip == 'false'
         uses: actions/checkout@v3
@@ -103,8 +106,8 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          REQUESTED="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || 'all' }}"
+          REQUESTED="${{ steps.filter.outputs.requested }}"
           if [ "${{ steps.filter.outputs.skip }}" = "true" ]; then
             echo "Service ${{ matrix.service }} skipped (requested: $REQUESTED)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "Service ${{ matrix.service }} deployed." >> $GITHUB_STEP_SUMMARY
+            echo "Service ${{ matrix.service }} deployed (requested: $REQUESTED)." >> $GITHUB_STEP_SUMMARY
