@@ -1,12 +1,6 @@
 name: Deploy NVIDIA DCGM Exporter Service
 
 on:
-  push:
-    tags:
-      - 'staging'
-      - 'staging-*'
-      - 'self-hosted'
-      - 'self-hosted-*'
   workflow_dispatch:
     inputs:
       compose_project_name:
@@ -16,45 +10,8 @@ on:
 
 jobs:
   deploy-nvidia-dcgm-exporter:
-    environment: staging
-    runs-on: self-hosted
-    env:
-      COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || 'pz_mothership' }}
-      # MinIO
-      MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
-      MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
-      MINIO_PORT: ${{ secrets.MINIO_PORT }}
-      MINIO_CONSOLE_PORT: ${{ secrets.MINIO_CONSOLE_PORT }}
-      MINIO_DATA_DIR: ${{ secrets.MINIO_DATA_DIR }}
-      # MongoDB
-      MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
-      MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
-      MONGO_INITDB_DATABASE: ${{ secrets.MONGO_INITDB_DATABASE }}
-      MONGODB_DATA_DIR: ${{ secrets.MONGODB_DATA_DIR }}
-      MONDODB_LOG_DIR: ${{ secrets.MONDODB_LOG_DIR }}
-      MONGO_PORT: ${{ secrets.MONGO_PORT }}
-      MONGO_DATA_DIR: ${{ secrets.MONGO_DATA_DIR }}
-      # Monitoring / Auxiliary
-      PROMETHEUS_PORT: ${{ secrets.PROMETHEUS_PORT }}
-      GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
-      NODE_EXPORTER_PORT: ${{ secrets.NODE_EXPORTER_PORT }}
-      NVIDIA_DCGM_EXPORTER_PORT: ${{ secrets.NVIDIA_DCGM_EXPORTER_PORT }}
-      CADVISOR_PORT: ${{ secrets.CADVISOR_PORT }}
-      REDIS_PORT: ${{ secrets.REDIS_PORT }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build (or pull) NVIDIA DCGM Exporter image
-        run: |
-          docker compose -f deployments/docker-compose.yml build nvidia-dcgm-exporter || echo "No build context; using upstream image"
-      - name: Deploy NVIDIA DCGM Exporter service
-        run: |
-          docker compose -f deployments/docker-compose.yml up -d nvidia-dcgm-exporter
+    uses: ./.github/workflows/deploy-services.yml
+    with:
+      compose_project_name: ${{ inputs.compose_project_name }}
+      service: nvidia-dcgm-exporter
+    secrets: inherit

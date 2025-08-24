@@ -1,4 +1,4 @@
-name: Deploy Redis Service
+name: Deploy Portainer Service
 
 on:
   workflow_dispatch:
@@ -9,9 +9,9 @@ on:
         default: 'pz_mothership'
 
 jobs:
-  deploy-redis:
+  deploy-portainer:
     uses: ./.github/workflows/deploy-services.yml
     with:
       compose_project_name: ${{ inputs.compose_project_name }}
-      service: redis
+      service: portainer
     secrets: inherit

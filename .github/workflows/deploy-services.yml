@@ -1,0 +1,110 @@
+name: Deploy Infrastructure Services
+
+on:
+  push:
+    tags:
+      - 'staging'
+      - 'staging-*'
+      - 'self-hosted'
+      - 'self-hosted-*'
+  workflow_dispatch:
+    inputs:
+      compose_project_name:
+        description: 'Override COMPOSE_PROJECT_NAME'
+        required: false
+        default: 'pz_mothership'
+      service:
+        description: 'Specific service to deploy (minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer, all)'
+        required: false
+        default: 'all'
+  workflow_call:
+    inputs:
+      compose_project_name:
+        required: false
+        type: string
+        default: 'pz_mothership'
+      service:
+        required: false
+        type: string
+        default: 'all'
+
+# Centralized environment variables (defined once)
+# Supports both workflow_dispatch (github.event.inputs.*) and workflow_call (inputs.*)
+env:
+  COMPOSE_PROJECT_NAME: ${{ github.event.inputs.compose_project_name || inputs.compose_project_name || 'pz_mothership' }}
+  # MinIO
+  MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+  MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+  MINIO_PORT: ${{ secrets.MINIO_PORT }}
+  MINIO_CONSOLE_PORT: ${{ secrets.MINIO_CONSOLE_PORT }}
+  MINIO_DATA_DIR: ${{ secrets.MINIO_DATA_DIR }}
+  # MongoDB
+  MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_INITDB_ROOT_USERNAME }}
+  MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_INITDB_ROOT_PASSWORD }}
+  MONGO_INITDB_DATABASE: ${{ secrets.MONGO_INITDB_DATABASE }}
+  MONGODB_DATA_DIR: ${{ secrets.MONGODB_DATA_DIR }}
+  MONDODB_LOG_DIR: ${{ secrets.MONDODB_LOG_DIR }}
+  MONGO_PORT: ${{ secrets.MONGO_PORT }}
+  MONGO_DATA_DIR: ${{ secrets.MONGO_DATA_DIR }}
+  # Monitoring / Auxiliary
+  PROMETHEUS_PORT: ${{ secrets.PROMETHEUS_PORT }}
+  GRAFANA_PORT: ${{ secrets.GRAFANA_PORT }}
+  NODE_EXPORTER_PORT: ${{ secrets.NODE_EXPORTER_PORT }}
+  NVIDIA_DCGM_EXPORTER_PORT: ${{ secrets.NVIDIA_DCGM_EXPORTER_PORT }}
+  CADVISOR_PORT: ${{ secrets.CADVISOR_PORT }}
+  REDIS_PORT: ${{ secrets.REDIS_PORT }}
+  # (Optional) Additional services
+  PORTAINER_PORT: ${{ secrets.PORTAINER_PORT }}
+
+jobs:
+  deploy-services:
+    name: Deploy ${{ matrix.service }}
+    environment: staging
+    runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
+    steps:
+      - name: Determine requested service
+        id: filter
+        run: |
+          # Derive requested service from workflow_dispatch, workflow_call, or default to 'all'
+          REQUESTED="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || 'all' }}"
+          if [ "$REQUESTED" != "all" ] && [ "$REQUESTED" != "${{ matrix.service }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Checkout code
+        if: steps.filter.outputs.skip == 'false'
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        if: steps.filter.outputs.skip == 'false'
+        uses: docker/setup-buildx-action@v2
+      - name: Log in to DockerHub
+        if: steps.filter.outputs.skip == 'false'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build image (if local context exists)
+        if: steps.filter.outputs.skip == 'false'
+        run: |
+          docker compose -f deployments/docker-compose.yml build ${{ matrix.service }} || echo "No build context for ${{ matrix.service }}; using upstream image"
+      - name: Deploy service
+        if: steps.filter.outputs.skip == 'false'
+        run: |
+          # Handle explicit dependency for cadvisor requiring redis
+          if [ "${{ matrix.service }}" = "cadvisor" ]; then
+            docker compose -f deployments/docker-compose.yml up -d redis
+          fi
+          docker compose -f deployments/docker-compose.yml up -d ${{ matrix.service }}
+      - name: Summary
+        if: always()
+        run: |
+          REQUESTED="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.service || (github.event_name == 'workflow_call' && inputs.service) || 'all' }}"
+          if [ "${{ steps.filter.outputs.skip }}" = "true" ]; then
+            echo "Service ${{ matrix.service }} skipped (requested: $REQUESTED)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Service ${{ matrix.service }} deployed." >> $GITHUB_STEP_SUMMARY
