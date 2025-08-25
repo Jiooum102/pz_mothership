@@ -7,11 +7,15 @@ on:
         description: 'Override COMPOSE_PROJECT_NAME'
         required: false
         default: 'pz_mothership'
+      service:
+        description: 'Service name to deploy'
+        required: false
+        default: 'grafana'
 
 jobs:
   deploy-grafana:
     uses: ./.github/workflows/deploy-services.yml
     with:
       compose_project_name: ${{ inputs.compose_project_name }}
-      service: grafana
+      service: ${{ inputs.service }}
     secrets: inherit
