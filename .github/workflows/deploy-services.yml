@@ -57,7 +57,7 @@ env:
 
 jobs:
   deploy-single:
-    if: ${{ github.event_name == 'push' && github.event.inputs.service != '' && github.event.inputs.service != 'all' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.service != '' && github.event.inputs.service != 'all') || (github.event_name == 'workflow_call' && inputs.service != 'all') }}
     name: Deploy single service
     environment: staging
     runs-on: self-hosted
@@ -95,7 +95,7 @@ jobs:
         run: echo "Service $TARGET_SERVICE deployed." >> $GITHUB_STEP_SUMMARY
 
   deploy-all:
-    if: ${{ github.event_name == 'push' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')}}
+    if: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == '' || github.event.inputs.service == 'all')) || (github.event_name == 'workflow_call' && inputs.service == 'all') }}
     name: Deploy all services (${{ matrix.service }})
     environment: staging
     runs-on: self-hosted
