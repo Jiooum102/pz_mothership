@@ -14,7 +14,7 @@ on:
         required: false
         default: 'pz_mothership'
       service:
-        description: 'Specific service to deploy (minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer, all)'
+        description: 'Specific service to deploy (minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer, portainer-agent, all)'
         required: false
         default: 'all'
   workflow_call:
@@ -54,6 +54,7 @@ env:
   CADVISOR_PORT: ${{ secrets.CADVISOR_PORT }}
   REDIS_PORT: ${{ secrets.REDIS_PORT }}
   PORTAINER_PORT: ${{ secrets.PORTAINER_PORT }}
+  PORTAINER_AGENT_PORT: ${{ secrets.PORTAINER_AGENT_PORT }}
 
 jobs:
   deploy-single:
@@ -102,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer]
+        service: [minio, mongo, prometheus, grafana, node_exporter, nvidia-dcgm-exporter, cadvisor, redis, portainer, portainer-agent]
     steps:
       - name: Debug context
         run: |
