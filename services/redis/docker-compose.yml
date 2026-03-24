@@ -1,0 +1,9 @@
+name: redis_service
+
+services:
+  redis:
+    image: redis:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"

@@ -1,0 +1,16 @@
+name: prometheus_service
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./config:/etc/prometheus/
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+
+volumes:
+  prometheus-data:
+    driver: local

@@ -1,0 +1,21 @@
+name: openwebui_service
+
+services:
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:latest
+    pull_policy: always
+    container_name: openwebui
+    restart: unless-stopped
+    ports:
+      - "${OPENWEBUI_PORT:-8080}:8080"
+    environment:
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+    volumes:
+      - ${OPENWEBUI_DATA_VOLUME:-./openwebui-data}:/app/backend/data
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    external: true
+    name: mothership-ollama-network

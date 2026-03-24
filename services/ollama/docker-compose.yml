@@ -1,0 +1,31 @@
+name: ollama_service
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    pull_policy: always
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-0.0.0.0}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+      - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED:-0}
+    volumes:
+      - ${OLLAMA_MODELS_VOLUME:-./ollama-models}:/root/.ollama
+      - ${OLLAMA_DATA_VOLUME:-./ollama-data}:/app/data
+    networks:
+      - ollama-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  ollama-network:
+    external: true
+    name: mothership-ollama-network

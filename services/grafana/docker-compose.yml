@@ -1,0 +1,15 @@
+name: grafana_service
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_grafana
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+
+volumes:
+  grafana-data:
+    driver: local

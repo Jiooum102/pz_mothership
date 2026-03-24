@@ -1,0 +1,16 @@
+name: nvidia_dcgm_exporter_service
+
+services:
+  nvidia-dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.7-3.5.0-ubuntu22.04
+    container_name: ${COMPOSE_PROJECT_NAME}_nvidia-dcgm-exporter
+    pid: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+    restart: unless-stopped
+    ports:
+      - "${NVIDIA_DCGM_EXPORTER_PORT}:9400"
