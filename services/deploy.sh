@@ -7,6 +7,7 @@ SERVICES=(
   minio
   mongo
   redis
+  postgres
   prometheus
   grafana
   node_exporter
@@ -16,6 +17,7 @@ SERVICES=(
   portainer-agent
   ollama
   openwebui
+  livekit
 )
 
 list_services() {

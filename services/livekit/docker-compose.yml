@@ -1,0 +1,24 @@
+name: livekit_service
+
+services:
+  livekit-server:
+    image: livekit/livekit-server:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-avatar}_livekit
+    # Host network: server sees host IP as local, so --node-ip passes 1:1 NAT check and ICE works.
+    # Redis is at 127.0.0.1:6379 via livekit.host.yaml (host's published port).
+    network_mode: host
+    command: ["--config", "/etc/livekit.yaml", "--node-ip", "${HOST:-localhost}"]
+    restart: unless-stopped
+    volumes:
+      - ./livekit.host.yaml:/etc/livekit.yaml:ro
+    environment:
+      - LK_API_KEY=${LK_API_KEY:-devkey}
+      - LK_API_SECRET=${LK_API_SECRET:-secret}
+    # NOTE: Redis dependency is handled by services/deploy.sh order.
+    # depends_on is not used here as services are split across compose files.
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7880"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

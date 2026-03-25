@@ -1,0 +1,26 @@
+# LiveKit Server Configuration
+# Used by livekit-server container. Keys loaded from env (LK_API_KEY, LK_API_SECRET).
+# See: https://docs.livekit.io/home/self-hosting/
+
+port: 7880
+rtc:
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: false
+  # Node IP is set via --node-ip in docker-compose (from HOST) so ICE candidates are
+  # reachable by clients. With use_external_ip: false, only that IP is advertised.
+  # For production behind NAT, set use_external_ip: true and/or configure TURN.
+
+keys:
+  # Development keys - override via env in production
+  # Format: key_id: secret (e.g. devkey: secret)
+  # Use LK_API_KEY and LK_API_SECRET env vars - see docker-compose
+  devkey: secret
+
+redis:
+  address: 127.0.0.1:6379
+  # Optional: username, password, db if Redis has auth
+
+logging:
+  level: info
+  # Options: debug, info, warn, error
