@@ -13,7 +13,7 @@ services:
       - ./livekit.host.yaml:/etc/livekit.yaml:ro
     environment:
       - LK_API_KEY=${LK_API_KEY:-devkey}
-      - LK_API_SECRET=${LK_API_SECRET:-secret}
+      - LK_API_SECRET=${LK_API_SECRET:-livekit_secret_key_1234567890_32}
     # NOTE: Redis dependency is handled by services/deploy.sh order.
     # depends_on is not used here as services are split across compose files.
     healthcheck:
@@ -22,3 +22,20 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-avatar}_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "7882:7882"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./caddy/Caddyfile.release:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+
+volumes:
+  caddy_data:

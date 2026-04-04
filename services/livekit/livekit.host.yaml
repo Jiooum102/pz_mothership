@@ -7,19 +7,22 @@ rtc:
   port_range_start: 50000
   port_range_end: 60000
   use_external_ip: false
-  # Node IP is set via --node-ip in docker-compose (from HOST) so ICE candidates are
-  # reachable by clients. With use_external_ip: false, only that IP is advertised.
-  # For production behind NAT, set use_external_ip: true and/or configure TURN.
+  # LAN-only setup: advertise the LAN IP directly so remote clients can reach ICE candidates.
+  # use_external_ip: true causes STUN to discover the public IP (171.225.185.8) which LAN
+  # clients cannot reach without hairpin NAT. Keep false for LAN access.
+  node_ip: 192.168.196.2
 
 keys:
   # Development keys - override via env in production
   # Format: key_id: secret (e.g. devkey: secret)
   # Use LK_API_KEY and LK_API_SECRET env vars - see docker-compose
-  devkey: secret
+  devkey: livekit_secret_key_1234567890_32
 
 redis:
-  address: 127.0.0.1:6379
+  address: 192.168.196.2:6379
   # Optional: username, password, db if Redis has auth
+
+prometheus_port: 8881
 
 logging:
   level: info

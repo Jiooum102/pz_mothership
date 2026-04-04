@@ -1,0 +1,7 @@
+# Caddy reverse proxy for LiveKit WSS (port 7882)
+# Proxies to LiveKit server on localhost:7880 (host network)
+
+:7882 {
+    tls internal
+    reverse_proxy localhost:7880
+}
