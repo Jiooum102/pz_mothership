@@ -2,7 +2,8 @@ name: postgres_service
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # Official PostgreSQL image with pgvector (https://github.com/pgvector/pgvector)
+    image: pgvector/pgvector:pg16
     container_name: ${COMPOSE_PROJECT_NAME:-avatar}_postgres
     restart: always
     environment:
@@ -15,6 +16,10 @@ services:
       - type: bind
         source: ${POSTGRES_DATA_DIR}
         target: /var/lib/postgresql/data
+      - type: bind
+        source: ./init/01-pgvector.sql
+        target: /docker-entrypoint-initdb.d/01-pgvector.sql
+        read_only: true
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
